@@ -1,0 +1,14 @@
+---
+title: "p8105_hw6_dw3093"
+author: "Katherine Wang"
+output: github_document
+---
+
+```{r message = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(modelr)
+library(mgcv)
+library(broom)
+set.seed(1)
+```
