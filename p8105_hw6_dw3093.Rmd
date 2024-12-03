@@ -47,3 +47,41 @@ baltimore_results <- broom::tidy(model, conf.int = TRUE) %>%
   knitr::kable(digits = 3)
 baltimore_results
 ```
+
+```{r}
+city_results <- homicide %>%
+  group_by(city_state) %>%
+  nest() %>%
+  mutate(
+    model = map(data, ~glm(solved ~ victim_age + victim_sex + victim_race, 
+                           data = ., family = "binomial")),
+    results = map(model, ~broom::tidy(., conf.int = TRUE) %>%
+                    filter(term == "victim_sexMale") %>%
+                    mutate(
+                      OR = exp(estimate), 
+                      CI_lower = exp(conf.low), 
+                      CI_upper = exp(conf.high))
+                  )
+  ) %>%
+  unnest(results) %>%
+  select(city_state, OR, CI_lower, CI_upper)
+print(city_results %>% knitr::kable(digits = 3))
+```
+```{r}
+city_results %>%
+  mutate(city_state = reorder(city_state, OR)) %>%
+  ggplot(aes(x = city_state, y = OR)) +
+  geom_point(color = "pink") +
+  geom_errorbar(aes(ymin = CI_lower, ymax = CI_upper), width = .2) + 
+  coord_flip() +
+  labs(
+    title = "Adjusted Odds Ratios for Solving Homicides by City",
+    x = "City, State",
+    y = "Odds Ratio (Male vs. Female Victims)"
+  ) +
+  theme(
+    axis.text = element_text(size = 6),
+    plot.title = element_text(hjust = 0.5, face = "bold")
+  )
+```
+
