@@ -1,6 +1,6 @@
 ---
 title: "p8105_hw6_dw3093"
-author: "Katherine Wang, dw3093"
+author: "Katherine Wang"
 output: github_document
 ---
 
@@ -16,8 +16,7 @@ set.seed(1)
 #QUESTION 2
 # Import the raw data from the guthub
 ```{r}
-homicide_raw <- read_csv("https://raw.githubusercontent.com/washingtonpost/data-homicides/refs/heads/master/homicide-data.csv",
-                         na = c("Unknown", "NA", ""))
+homicide_raw <- read_csv(file = "data/homicide-data.csv",na = c("Unknown", "NA", ""))
 ```
 # Data cleaning, create city_state variable and solved variable
 ```{r}
@@ -25,7 +24,8 @@ homicide <- homicide_raw %>%
   mutate(
     city_state = str_c(city, state, sep = ", "), 
     solved = if_else(disposition == "Closed by arrest", 1, 0),
-    victim_age = as.numeric(victim_age)
+    victim_age = as.numeric(victim_age),
+    reported_date = as.Date(as.character(reported_date), format = "%Y%m%d"),
   ) %>%
   filter(
     !city_state %in% c("Dallas, TX", "Phoenix, AZ", "Kansas City, MO", "Tulsa, AL"),
