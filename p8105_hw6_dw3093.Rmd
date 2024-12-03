@@ -1,6 +1,6 @@
 ---
 title: "p8105_hw6_dw3093"
-author: "Katherine Wang"
+author: "Katherine Wang, dw3093"
 output: github_document
 ---
 
@@ -14,10 +14,12 @@ set.seed(1)
 ```
 
 #QUESTION 2
+# Import the raw data from the guthub
 ```{r}
 homicide_raw <- read_csv("https://raw.githubusercontent.com/washingtonpost/data-homicides/refs/heads/master/homicide-data.csv",
                           na = c("Unknown", "NA", ""))
 ```
+# Data cleaning, create city_state variable and solved variable
 ```{r}
 homicide <- homicide_raw %>%
   mutate(
@@ -32,6 +34,7 @@ homicide <- homicide_raw %>%
   drop_na(victim_age, victim_sex, victim_race, solved) 
 ```
 
+#  Conduct the logistic Regression for Baltimore, MD
 ```{r}
 baltimore_raw <- homicide |> filter(city_state == "Baltimore, MD")
 model <- glm(solved ~ victim_age + victim_sex + victim_race,
@@ -47,6 +50,9 @@ baltimore_results <- broom::tidy(model, conf.int = TRUE) %>%
   knitr::kable(digits = 3)
 baltimore_results
 ```
+The logistic regression analysis for Baltimore, MD, found that the odds of a homicide being solved for male victims are 0.426 times the odds for female victims, holding victim age and race constant. The 95% CI for the odds ratio is (0.324, 0.558), suggesting that the result is statistically significant because the interval does not include 1.
+
+This means there is strong evidence that the likelihood of case resolution differs between male and female victims in Baltimore.
 
 ```{r}
 city_results <- homicide %>%
@@ -64,13 +70,14 @@ city_results <- homicide %>%
                   )
   ) %>%
   unnest(results) %>%
-  select(city_state, OR, CI_lower, CI_upper)
-print(city_results %>% knitr::kable(digits = 3))
+  select(city_state, OR, CI_lower, CI_upper)  
+city_results|>
+  knitr::kable(digits = 3)
 ```
+# # Create a plot of OR and CI for each city
 ```{r}
 city_results %>%
-  mutate(city_state = reorder(city_state, OR)) %>%
-  ggplot(aes(x = city_state, y = OR)) +
+  ggplot(aes(x = reorder(city_state, OR), y = OR)) +
   geom_point(color = "pink") +
   geom_errorbar(aes(ymin = CI_lower, ymax = CI_upper), width = .2) + 
   labs(
@@ -80,9 +87,56 @@ city_results %>%
   ) +
   theme_minimal() +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
     axis.text = element_text(size = 8),
     plot.title = element_text(hjust = 0.5, face = "bold")
+  ) +
+  coord_flip()
+```
+
+Comments: The plot shows the ORs for solving homicides for male victims relative to female victims with CIs. Cities where the CIs exclude 1 indicate significant gender differences, while overlapping CIs suggest no clear disparity. Wide CIs in cities like Albuquerque, Stockton, and Fresno reflect high variability or limited data, reducing precision. In most cities, male victims have lower odds of their cases being solved compared to female victims. However, in Albuquerque, Atlanta, Fresno, Nashville, Stockton, and Richmond, male victims are more likely to have their cases solved.
+
+# QUESTION 3:
+# Import the data, conduct data cleaning, and exclude the missing value
+```{r}
+birthweight = read_csv("data/birthweight.csv", na = c(".", "", "NA")) |>
+  drop_na()|>
+  mutate(
+    malform = factor(malform, levels = c(0, 1), labels = c("Absent", "Present")),
+    babysex = factor(babysex, levels = c(1, 2), labels = c("Male", "Female")),
+    frace = factor(frace, levels = c(1, 2, 3, 4, 8, 9), labels = c("White", "Black", "Asian", "Puerto Rican", "Other", "Unknown")),
+    mrace = factor(mrace, levels = c(1, 2, 3, 4, 8), labels = c("White", "Black", "Asian", "Puerto Rican", "Other"))
+  )
+
+colSums(is.na(birthweight))
+```
+Check missing value: we can see that the summary of the missing values shows all zeros, which means we have successfully excluded all missing values!
+
+# run the regression model
+```{r}
+full_model <- lm(bwt ~ babysex + bhead + blength + delwt + fincome + frace + gaweeks + malform + menarche + mheight + momage + mrace + parity + pnumlbw + pnumsga + ppbmi + ppwt + smoken + wtgain, data = birthweight)
+
+stepwise_model <- step(full_model, direction = "backward")
+
+summary(stepwise_model)
+```
+```{r}
+birthweight <- birthweight %>%
+  add_predictions(full_model, var = "fitted_hypothesis") %>%
+  add_residuals(full_model, var = "residuals_hypothesis")
+ggplot(birthweight, aes(x = fitted_hypothesis, y = residuals_hypothesis)) +
+  geom_point(alpha = .5, color = "pink") +
+  geom_smooth(method = "loess", color = "purple",) +
+  labs(
+    title = "Residuals vs. Fitted Values",
+    x = "Fitted Values (Predicted Birthweight)",
+    y = "Residuals"
+  ) +
+  theme_minimal() + 
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.text = element_text(size = 10)
   )
 ```
+The residuals vs. fitted values plot reveals that residuals are mostly centered around zero, indicating no substantial systematic bias in the model's predictions. 
+
 
