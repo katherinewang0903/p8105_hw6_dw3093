@@ -143,7 +143,7 @@ The residuals vs. fitted values plot shows that residuals are mostly centered ar
 ```{r}
 model_1 <- lm(bwt ~ blength + gaweeks, data = birthweight)
 model_2 <- lm(bwt ~ bhead * blength * babysex, data = birthweight)
-model_0 <- lm(bwt ~ babysex + bhead + blength + delwt + fincome + frace + gaweeks + malform + menarche + mheight + momage + mrace + parity + pnumlbw + pnumsga + ppbmi + ppwt + smoken + wtgain, data = birthweight)
+model_proposed <- lm(bwt ~ babysex + bhead + blength + delwt + fincome + frace + gaweeks + malform + menarche + mheight + momage + mrace + parity + pnumlbw + pnumsga + ppbmi + ppwt + smoken + wtgain, data = birthweight)
 
 set.seed(1)
 cv <- crossv_mc(birthweight, 100) %>%
@@ -152,20 +152,20 @@ cv <- crossv_mc(birthweight, 100) %>%
     test = map(test, as_tibble),
     model_1 = map(train, ~ lm(bwt ~ blength + gaweeks, data = .x)),
     model_2 = map(train, ~ lm(bwt ~ bhead * blength * babysex, data = .x)),
-    model_0 = map(train, ~ lm(bwt ~ babysex + bhead + blength + delwt + fincome + frace + gaweeks + malform + menarche + mheight + momage + mrace + parity + pnumlbw + pnumsga + ppbmi + ppwt + smoken + wtgain, data = .x))
+    model_proposed = map(train, ~ lm(bwt ~ babysex + bhead + blength + delwt + fincome + frace + gaweeks + malform + menarche + mheight + momage + mrace + parity + pnumlbw + pnumsga + ppbmi + ppwt + smoken + wtgain, data = .x))
   ) %>%
   mutate(
     rmse_1 = map2_dbl(model_1, test, ~ rmse(.x, .y)),
     rmse_2 = map2_dbl(model_2, test, ~ rmse(.x, .y)),
-    rmse_0 = map2_dbl(model_0, test, ~ rmse(.x, .y))
+    rmse_proposed = map2_dbl(model_proposed, test, ~ rmse(.x, .y))
   )
 cv_summary <- cv %>%
-  select(rmse_1, rmse_2, rmse_0) %>%
+  select(rmse_1, rmse_2, rmse_proposed) %>%
   pivot_longer(cols = everything(), names_to = "model", values_to = "rmse") %>%
   mutate(model = recode(model,
                         "rmse_1" = "Model 1",
                         "rmse_2" = "Model 2",
-                        "rmse_0" = "Model 0")) %>%
+                        "rmse_proposed" = "Model Proposed")) %>%
   group_by(model) %>%
   summarize(mean_rmse = mean(rmse))
 cv_summary %>% knitr::kable(digits = 3)
@@ -182,10 +182,16 @@ cv %>%
   ggplot(aes(x = model, y = rmse, fill = model)) +
   geom_violin() +
   labs(
-    title = "rmse Comparison Across Three Models",
+    title = "RMSE Comparison Across Three Models",
     x = "Model",
-    y = "rmse"
+    y = "RMSE"
   ) +
   theme_minimal()
 ```
 
+Comments: 
+Model 1, which includes only birth length and gestational age as predictors, has the highest RMSE and the widest variability, indicating poor predictive performance. Its simplicity limits its ability to account for key factors influencing birthweight, making it the least effective model. 
+
+Model 2 improves upon Model 1 by incorporating head circumference, birth length, sex, and their interactions. This enhancement reduces RMSE and variability, demonstrating better predictive accuracy. 
+
+The proposed model, which includes a comprehensive set of maternal, socioeconomic, and baby-specific predictors, achieves the lowest RMSE and the narrowest variability, reflecting its superior ability to predict birthweight. While it is the most accurate and reliable model, its complexity could pose challenges for practical application and interpretation, especially in resource-constrained settings. In contrast, Model 2 offers a reasonable trade-off between simplicity and predictive performance, making it a more practical option
