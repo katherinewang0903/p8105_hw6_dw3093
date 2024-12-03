@@ -10,15 +10,16 @@ library(ggplot2)
 library(modelr)
 library(mgcv)
 library(broom)
+library(purrr)
 set.seed(1)
 ```
 
-#QUESTION 2
-# Import the raw data from the guthub
+# QUESTION 2
+Import the raw data from the guthub
 ```{r}
 homicide_raw <- read_csv(file = "data/homicide-data.csv",na = c("Unknown", "NA", ""))
 ```
-# Data cleaning, create city_state variable and solved variable
+Data cleaning, create city_state variable and solved variable
 ```{r}
 homicide <- homicide_raw %>%
   mutate(
@@ -34,7 +35,7 @@ homicide <- homicide_raw %>%
   drop_na(victim_age, victim_sex, victim_race, solved) 
 ```
 
-#  Conduct the logistic Regression for Baltimore, MD
+Conduct the logistic Regression for Baltimore, MD
 ```{r}
 baltimore_raw <- homicide |> filter(city_state == "Baltimore, MD")
 model <- glm(solved ~ victim_age + victim_sex + victim_race,
@@ -74,7 +75,7 @@ city_results <- homicide %>%
 city_results|>
   knitr::kable(digits = 3)
 ```
-# # Create a plot of OR and CI for each city
+Create a plot of OR and CI for each city
 ```{r}
 city_results %>%
   ggplot(aes(x = reorder(city_state, OR), y = OR)) +
@@ -96,7 +97,7 @@ city_results %>%
 Comments: The plot shows the ORs for solving homicides for male victims relative to female victims with CIs. Cities where the CIs exclude 1 indicate significant gender differences, while overlapping CIs suggest no clear disparity. Wide CIs in cities like Albuquerque, Stockton, and Fresno reflect high variability or limited data, reducing precision. In most cities, male victims have lower odds of their cases being solved compared to female victims. However, in Albuquerque, Atlanta, Fresno, Nashville, Stockton, and Richmond, male victims are more likely to have their cases solved.
 
 # QUESTION 3:
-# Import the data, conduct data cleaning, and exclude the missing value
+Import the data, conduct data cleaning, and exclude the missing value
 ```{r}
 birthweight = read_csv("data/birthweight.csv", na = c(".", "", "NA")) |>
   drop_na()|>
@@ -111,7 +112,7 @@ colSums(is.na(birthweight))
 ```
 Check missing value: we can see that the summary of the missing values shows all zeros, which means we have successfully excluded all missing values!
 
-# run the regression model
+Run the regression model
 ```{r}
 full_model <- lm(bwt ~ babysex + bhead + blength + delwt + fincome + frace + gaweeks + malform + menarche + mheight + momage + mrace + parity + pnumlbw + pnumsga + ppbmi + ppwt + smoken + wtgain, data = birthweight)
 stepwise_model <- step(full_model, direction = "backward")
